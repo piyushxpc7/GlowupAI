@@ -4,13 +4,17 @@ import base64
 import binascii
 import json
 import secrets
+from contextlib import asynccontextmanager
 from pathlib import Path
 
-from fastapi import FastAPI, Header, HTTPException
+from fastapi import FastAPI, Header, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
+from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi.errors import RateLimitExceeded
+from slowapi.util import get_remote_address
 
 from .auth import AuthError, verify_id_token
 from .complete_service import CompleteSkinProofService
@@ -161,9 +165,28 @@ def create_complete_app(service: CompleteSkinProofService | None = None) -> Fast
     settings = Settings.from_env()
     settings.prepare()
     active = service or CompleteSkinProofService(build_full_database(settings), settings, build_photo_store(settings.photo_dir))
-    app = FastAPI(title="SkinProof", version="3.0.0", description="A complete personal appearance measurement system. Cosmetic tracking, never diagnosis.")
+
+    @asynccontextmanager
+    async def lifespan(app: FastAPI):
+        yield
+        active.jobs.shutdown()
+
+    app = FastAPI(
+        title="SkinProof",
+        version="3.0.0",
+        description="A complete personal appearance measurement system. Cosmetic tracking, never diagnosis.",
+        lifespan=lifespan,
+    )
     app.state.skinproof = active
-    app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
+    limiter = Limiter(key_func=get_remote_address)
+    app.state.limiter = limiter
+    app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=list(settings.cors_allowed_origins),
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
 
     def run(callable_, *args, **kwargs):
         try:
@@ -224,11 +247,13 @@ def create_complete_app(service: CompleteSkinProofService | None = None) -> Fast
         return {"status": "ok", "database": getattr(active.db, "backend", "sqlite"), "database_ready": database_ready, "version": "3.0.0", "scope": "cosmetic_tracking", "features": ["experiments", "qna", "discover", "commerce", "reprocessing", "shelf_scan", "product_prediction", "root_cause_search", "budget_optimizer", "derm_export"]}
 
     @app.post("/api/users")
-    def create_user(payload: UserCreate):
+    @limiter.limit("20/minute")
+    def create_user(request: Request, payload: UserCreate):
         return active.create_user(payload.skin_type)
 
     @app.post("/api/auth/session")
-    def auth_session(authorization: str | None = Header(default=None)):
+    @limiter.limit("30/minute")
+    def auth_session(request: Request, authorization: str | None = Header(default=None)):
         identity = _bearer_identity(authorization)
         return run(active.session_for_identity, identity.uid, identity.email, identity.email_verified, identity.name)
 
@@ -303,7 +328,8 @@ def create_complete_app(service: CompleteSkinProofService | None = None) -> Fast
         return run(active.confound_check, user_id, exclude_product_id)
 
     @app.post("/api/captures")
-    def capture(payload: CaptureCreate, authorization: str | None = Header(default=None)):
+    @limiter.limit("30/minute")
+    def capture(payload: CaptureCreate, request: Request, authorization: str | None = Header(default=None)):
         _require_owner(payload.user_id, authorization)
         try:
             image = base64.b64decode(payload.image_base64, validate=True)
@@ -383,7 +409,8 @@ def create_complete_app(service: CompleteSkinProofService | None = None) -> Fast
         return run(active.set_experiment_status, user_id, experiment_id, payload.status)
 
     @app.post("/api/users/{user_id}/qna")
-    def qna(user_id: str, payload: QnaCreate, authorization: str | None = Header(default=None)):
+    @limiter.limit("20/minute")
+    def qna(user_id: str, payload: QnaCreate, request: Request, authorization: str | None = Header(default=None)):
         _require_owner(user_id, authorization)
         return run(active.ask, user_id, payload.question, payload.thread_id)
 
@@ -433,7 +460,8 @@ def create_complete_app(service: CompleteSkinProofService | None = None) -> Fast
         return run(active.reprocess_status, user_id, job_id)
 
     @app.post("/api/users/{user_id}/shelf-scan")
-    def shelf_scan(user_id: str, payload: ShelfScanCreate, authorization: str | None = Header(default=None)):
+    @limiter.limit("20/minute")
+    def shelf_scan(user_id: str, payload: ShelfScanCreate, request: Request, authorization: str | None = Header(default=None)):
         _require_owner(user_id, authorization)
         try:
             image = base64.b64decode(payload.image_base64, validate=True)
