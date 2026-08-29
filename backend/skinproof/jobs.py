@@ -73,4 +73,4 @@ class JobRunner:
         return row
 
     def shutdown(self) -> None:
-        self._executor.shutdown(wait=False, cancel_futures=True)
+        self._executor.shutdown(wait=True)

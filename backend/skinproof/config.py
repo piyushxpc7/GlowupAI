@@ -16,7 +16,10 @@ def _legacy_gemini_key() -> str | None:
 
     if os.getenv("SKINPROOF_DISABLE_LEGACY_KEY_FILE", "").strip() == "1":
         return None
-    if os.getenv("SKINPROOF_ENV", "development").strip().casefold() in {"prod", "production"}:
+    # Fail secure: the bridge is only active when a deployment explicitly
+    # opts into development mode. An unset/misconfigured SKINPROOF_ENV must
+    # never re-enable a local dev convenience in a real deployment.
+    if os.getenv("SKINPROOF_ENV", "production").strip().casefold() != "development":
         return None
     path = Path(os.getenv("SKINPROOF_LEGACY_KEY_FILE", "first.py"))
     try:
@@ -45,6 +48,7 @@ class Settings:
     firebase_project_id: str | None = None
     auth_required: bool = False
     admin_token: str | None = None
+    cors_allowed_origins: tuple[str, ...] = ()
 
     @classmethod
     def from_env(cls) -> "Settings":
@@ -81,6 +85,11 @@ class Settings:
             # web client carry no bearer tokens and must keep passing/working.
             auth_required=auth_required_value in {"1", "true", "yes", "on"},
             admin_token=os.getenv("SKINPROOF_ADMIN_TOKEN", "").strip() or None,
+            cors_allowed_origins=tuple(
+                origin.strip()
+                for origin in os.getenv("SKINPROOF_CORS_ALLOWED_ORIGINS", "").split(",")
+                if origin.strip()
+            ),
         )
 
     def prepare(self) -> None:
