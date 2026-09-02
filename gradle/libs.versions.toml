@@ -46,7 +46,7 @@ vico = "2.0.0-alpha.28"
 firebaseBom = "33.7.0"
 googleServicesPlugin = "4.4.2"
 firebaseCrashlyticsPlugin = "3.0.2"
-kotlinxCoroutines = "1.9.0"
+kotlinxCoroutines = "1.11.0"
 
 # Misc androidx
 splashscreen = "1.0.1"
