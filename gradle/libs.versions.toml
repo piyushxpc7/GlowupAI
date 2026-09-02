@@ -21,7 +21,7 @@ navigationCompose = "2.9.0"
 kotlinxSerializationJson = "1.7.3"
 
 # Networking
-retrofit = "2.11.0"
+retrofit = "3.0.0"
 retrofitKotlinxSerializationConverter = "1.0.0"
 okhttp = "4.12.0"
 
