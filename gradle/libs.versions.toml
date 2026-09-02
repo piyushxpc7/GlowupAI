@@ -56,7 +56,7 @@ coroutinesTest = "1.9.0"
 turbine = "1.2.0"
 mockwebserver = "4.12.0"
 robolectric = "4.13"
-mockk = "1.13.13"
+mockk = "1.14.11"
 
 # Desugaring
 desugarJdkLibs = "2.1.4"
