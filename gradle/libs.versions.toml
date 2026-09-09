@@ -17,7 +17,7 @@ hiltNavigationCompose = "1.2.0"
 androidxHilt = "1.2.0"
 
 # Navigation + serialization
-navigationCompose = "2.9.0"
+navigationCompose = "2.10.0"
 kotlinxSerializationJson = "1.7.3"
 
 # Networking
