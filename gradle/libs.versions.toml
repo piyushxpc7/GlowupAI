@@ -14,7 +14,7 @@ composeBom = "2026.02.01"
 # DI
 hilt = "2.60.1"
 hiltNavigationCompose = "1.2.0"
-androidxHilt = "1.2.0"
+androidxHilt = "1.4.0"
 
 # Navigation + serialization
 navigationCompose = "2.9.0"
