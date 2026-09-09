@@ -44,7 +44,7 @@ jobs:
 
       - name: Upload Snyk Results
         if: always()
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v7
         with:
           name: snyk-results
           path: |
@@ -132,7 +132,7 @@ jobs:
 
       - name: Upload Security Reports
         if: always()
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v7
         with:
           name: python-security-reports
           path: |
@@ -162,7 +162,7 @@ jobs:
 
       - name: Upload OWASP Report
         if: always()
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v7
         with:
           name: owasp-report
           path: reports/
@@ -219,7 +219,7 @@ jobs:
 
       - name: Upload Android Security Report
         if: always()
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v7
         with:
           name: android-security-report
           path: app/build/reports/lint-results-debug.*
