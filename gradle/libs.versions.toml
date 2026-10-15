@@ -9,7 +9,7 @@ junitVersion = "1.2.1"
 espressoCore = "3.6.1"
 lifecycle = "2.9.0"
 activityCompose = "1.10.0"
-composeBom = "2026.02.01"
+composeBom = "2026.08.00"
 
 # DI
 hilt = "2.60.1"
